@@ -213,9 +213,12 @@ function getDb() {
           .catch(err => callback(err, null));
       },
       run: (query, params, callback) => {
-        // Check if query has RETURNING clause (for INSERT)
-        const hasReturning = query.toUpperCase().includes('RETURNING');
-        const pgQuery = hasReturning ? query : convertQuery(query);
+        // For INSERT queries, add RETURNING id if not present
+        let pgQuery = convertQuery(query);
+        const isInsert = query.trim().toUpperCase().startsWith('INSERT');
+        if (isInsert && !pgQuery.toUpperCase().includes('RETURNING')) {
+          pgQuery = pgQuery + ' RETURNING id';
+        }
         
         pgPool.query(pgQuery, params || [])
           .then(result => {
@@ -232,7 +235,13 @@ function getDb() {
           });
       },
       prepare: (query) => {
-        const pgQuery = convertQuery(query);
+        let pgQuery = convertQuery(query);
+        // For INSERT queries, add RETURNING id if not present
+        const isInsert = query.trim().toUpperCase().startsWith('INSERT');
+        if (isInsert && !pgQuery.toUpperCase().includes('RETURNING')) {
+          pgQuery = pgQuery + ' RETURNING id';
+        }
+        
         return {
           run: (params, callback) => {
             pgPool.query(pgQuery, params || [])
