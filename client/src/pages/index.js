@@ -17,11 +17,16 @@ export default function Home() {
     try {
       setLoading(true);
       const response = await getEvents();
-      setEvents(response.data);
-      setError(null);
+      if (response.data) {
+        setEvents(response.data);
+        setError(null);
+      } else {
+        setError('לא התקבלו נתונים מהשרת');
+      }
     } catch (err) {
-      setError('שגיאה בטעינת האירועים');
-      console.error(err);
+      console.error('Error loading events:', err);
+      console.error('API URL:', process.env.NEXT_PUBLIC_API_URL || 'לא מוגדר');
+      setError(`שגיאה בטעינת האירועים: ${err.message || 'השרת לא נגיש'}`);
     } finally {
       setLoading(false);
     }
@@ -57,7 +62,19 @@ export default function Home() {
         </div>
 
         {loading && <div className="loading">טוען...</div>}
-        {error && <div className="error">{error}</div>}
+        {error && (
+          <div className="error">
+            <h3>{error}</h3>
+            <p style={{ marginTop: '10px', fontSize: '14px' }}>
+              <strong>פתרון:</strong> ודא שהשרת רץ ונגיש.
+            </p>
+            <details style={{ marginTop: '15px', fontSize: '12px' }}>
+              <summary>פרטים טכניים</summary>
+              <p>API URL: {process.env.NEXT_PUBLIC_API_URL || 'לא מוגדר (משתמש ב-localhost)'}</p>
+              <p>אם השרת לא רץ, העלה אותו ל-Railway או Render.</p>
+            </details>
+          </div>
+        )}
 
         {!loading && events.length === 0 && (
           <div style={{ textAlign: 'center', padding: '40px' }}>
