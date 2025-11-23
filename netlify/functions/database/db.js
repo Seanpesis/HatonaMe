@@ -1,8 +1,17 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 const { Pool } = require('pg');
 
-const DB_PATH = path.join(__dirname, '../../wedding_planner.db');
+// Database path for Netlify Functions
+let DB_PATH;
+if (process.env.NETLIFY) {
+  // In Netlify environment, use /tmp directory
+  DB_PATH = '/tmp/wedding_planner.db';
+} else {
+  // Local development
+  DB_PATH = path.join(__dirname, '../../wedding_planner.db');
+}
 
 let db = null;
 let pgPool = null;
@@ -37,13 +46,19 @@ function initPostgreSQL() {
 
 function initSQLite() {
   return new Promise((resolve, reject) => {
+    // Ensure directory exists
+    const dbDir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
+    
     db = new sqlite3.Database(DB_PATH, (err) => {
       if (err) {
         console.error('Error opening database:', err);
         reject(err);
         return;
       }
-      console.log('Connected to SQLite database');
+      console.log(`Connected to SQLite database at: ${DB_PATH}`);
       createTablesSQLite().then(resolve).catch(reject);
     });
   });
@@ -304,9 +319,25 @@ function close() {
   return Promise.resolve();
 }
 
+// Initialize database function for Netlify Functions
+async function initializeDatabase() {
+  if (db && !usePostgreSQL) return db; // Already initialized
+  if (pgPool && usePostgreSQL) return pgPool; // Already initialized
+  
+  try {
+    await init();
+    return getDb();
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   init,
   getDb,
-  close
+  close,
+  initializeDatabase,
+  db: () => getDb()
 };
 

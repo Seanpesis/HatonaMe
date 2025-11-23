@@ -1,26 +1,29 @@
-const { db, initializeDatabase } = require('../../../server/database/db');
+const { initializeDatabase } = require('../database/db');
 
 // Initialize database on cold start
-let initialized = false;
+let db = null;
 const initDB = async () => {
-  if (!initialized) {
-    await initializeDatabase();
-    initialized = true;
+  if (!db) {
+    db = await initializeDatabase();
   }
+  return db;
 };
 
 exports.handler = async (event, context) => {
-  await initDB();
+  const database = await initDB();
   
-  const { httpMethod, path, body, queryStringParameters } = event;
+  const { httpMethod, body, queryStringParameters } = event;
+  const path = event.path || event.rawUrl || '';
+  
+  console.log('Events function called:', { httpMethod, path, body });
   
   try {
     switch (httpMethod) {
       case 'GET':
-        if (path.endsWith('/events')) {
+        if (path.includes('/events') && !path.includes('/events/')) {
           // Get all events
           const events = await new Promise((resolve, reject) => {
-            db.all('SELECT * FROM events ORDER BY created_at DESC', (err, rows) => {
+            database.all('SELECT * FROM events ORDER BY created_at DESC', (err, rows) => {
               if (err) reject(err);
               else resolve(rows);
             });
@@ -36,11 +39,19 @@ exports.handler = async (event, context) => {
             },
             body: JSON.stringify(events)
           };
-        } else {
+        } else if (path.includes('/events/')) {
           // Get single event
-          const id = path.split('/').pop();
+          const pathParts = path.split('/');
+          const id = pathParts[pathParts.length - 1] || queryStringParameters?.id;
+          if (!id) {
+            return {
+              statusCode: 400,
+              body: JSON.stringify({ error: 'Event ID is required' })
+            };
+          }
+
           const event = await new Promise((resolve, reject) => {
-            db.get('SELECT * FROM events WHERE id = ?', [id], (err, row) => {
+            database.get('SELECT * FROM events WHERE id = ?', [id], (err, row) => {
               if (err) reject(err);
               else resolve(row);
             });
@@ -68,13 +79,13 @@ exports.handler = async (event, context) => {
       case 'POST':
         const eventData = JSON.parse(body);
         const newEvent = await new Promise((resolve, reject) => {
-          db.run(
-            'INSERT INTO events (name, date, location, description, budget) VALUES (?, ?, ?, ?, ?)',
-            [eventData.name, eventData.date, eventData.location, eventData.description, eventData.budget],
+          database.run(
+            'INSERT INTO events (name, date, location) VALUES (?, ?, ?)',
+            [eventData.name, eventData.date, eventData.location],
             function(err) {
               if (err) reject(err);
               else {
-                db.get('SELECT * FROM events WHERE id = ?', [this.lastID], (err, row) => {
+                database.get('SELECT * FROM events WHERE id = ?', [this.lastID], (err, row) => {
                   if (err) reject(err);
                   else resolve(row);
                 });
@@ -99,9 +110,9 @@ exports.handler = async (event, context) => {
         const updateData = JSON.parse(body);
         
         await new Promise((resolve, reject) => {
-          db.run(
-            'UPDATE events SET name = ?, date = ?, location = ?, description = ?, budget = ? WHERE id = ?',
-            [updateData.name, updateData.date, updateData.location, updateData.description, updateData.budget, updateId],
+          database.run(
+            'UPDATE events SET name = ?, date = ?, location = ? WHERE id = ?',
+            [updateData.name, updateData.date, updateData.location, updateId],
             function(err) {
               if (err) reject(err);
               else resolve();
@@ -110,7 +121,7 @@ exports.handler = async (event, context) => {
         });
         
         const updatedEvent = await new Promise((resolve, reject) => {
-          db.get('SELECT * FROM events WHERE id = ?', [updateId], (err, row) => {
+          database.get('SELECT * FROM events WHERE id = ?', [updateId], (err, row) => {
             if (err) reject(err);
             else resolve(row);
           });
@@ -131,7 +142,7 @@ exports.handler = async (event, context) => {
         const deleteId = path.split('/').pop();
         
         await new Promise((resolve, reject) => {
-          db.run('DELETE FROM events WHERE id = ?', [deleteId], function(err) {
+          database.run('DELETE FROM events WHERE id = ?', [deleteId], function(err) {
             if (err) reject(err);
             else resolve();
           });

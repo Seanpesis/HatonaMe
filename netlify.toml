@@ -27,7 +27,32 @@
 
 # Redirects for API routes to Netlify Functions
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  from = "/api/events"
+  to = "/.netlify/functions/api/events"
+  status = 200
+
+[[redirects]]
+  from = "/api/events/*"
+  to = "/.netlify/functions/api/events"
+  status = 200
+
+[[redirects]]
+  from = "/api/guests/*"
+  to = "/.netlify/functions/api/guests"
+  status = 200
+
+[[redirects]]
+  from = "/api/tables/*"
+  to = "/.netlify/functions/api/tables"
+  status = 200
+
+[[redirects]]
+  from = "/api/excel/*"
+  to = "/.netlify/functions/api/excel"
+  status = 200
+
+[[redirects]]
+  from = "/api/whatsapp/*"
+  to = "/.netlify/functions/api/whatsapp"
   status = 200
 
