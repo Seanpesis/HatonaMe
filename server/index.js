@@ -29,38 +29,36 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Initialize database
-const db = require('./database/db');
-db.init().then(() => {
-  console.log('Database initialized successfully');
-  
-  // Initialize WhatsApp
+// Initialize simple database (no initialization needed)
+console.log('Using simple JSON database');
+
+// Initialize WhatsApp (optional for local development)
+try {
   const whatsappService = require('./services/whatsappService');
   whatsappService.initialize();
-  
-  const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Open http://localhost:${PORT} in your browser`);
-  });
+} catch (error) {
+  console.log('WhatsApp service not available (this is OK for development)');
+}
 
-  server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.error(`\n❌ ERROR: Port ${PORT} is already in use!`);
-      console.error(`\nפתרונות:`);
-      console.error(`1. סגור את התהליך הישן:`);
-      console.error(`   Windows: netstat -ano | findstr :${PORT}`);
-      console.error(`   ואז: taskkill /PID [מספר] /F`);
-      console.error(`\n2. או שנה פורט בקובץ .env:`);
-      console.error(`   PORT=5001`);
-      console.error(`\n3. או לחץ Ctrl+C כאן וסגור את כל החלונות`);
-      process.exit(1);
-    } else {
-      console.error('Server error:', err);
-      process.exit(1);
-    }
-  });
-}).catch((err) => {
-  console.error('Failed to initialize database:', err);
-  process.exit(1);
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Open http://localhost:${PORT} in your browser`);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌ ERROR: Port ${PORT} is already in use!`);
+    console.error(`\nפתרונות:`);
+    console.error(`1. סגור את התהליך הישן:`);
+    console.error(`   Windows: netstat -ano | findstr :${PORT}`);
+    console.error(`   ואז: taskkill /PID [מספר] /F`);
+    console.error(`\n2. או שנה פורט בקובץ .env:`);
+    console.error(`   PORT=5001`);
+    console.error(`\n3. או לחץ Ctrl+C כאן וסגור את כל החלונות`);
+    process.exit(1);
+  } else {
+    console.error('Server error:', err);
+    process.exit(1);
+  }
 });
 

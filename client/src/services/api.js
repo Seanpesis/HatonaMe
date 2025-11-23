@@ -47,17 +47,18 @@ api.interceptors.response.use(
 
 // Events
 export const getEvents = () => api.get('/events');
-export const getEvent = (id) => api.get(`/events/${id}`);
+export const getEvent = (id) => api.get(`/events?id=${id}`);
 export const createEvent = (data) => api.post('/events', data);
-export const updateEvent = (id, data) => api.put(`/events/${id}`, data);
-export const deleteEvent = (id) => api.delete(`/events/${id}`);
+export const updateEvent = (id, data) => api.put(`/events?id=${id}`, data);
+export const deleteEvent = (id) => api.delete(`/events?id=${id}`);
 
 // Guests
-export const getGuests = (eventId) => api.get(`/guests/event/${eventId}`);
-export const getGuest = (id) => api.get(`/guests/${id}`);
-export const updateGuest = (id, data) => api.put(`/guests/${id}`, data);
-export const deleteGuest = (id) => api.delete(`/guests/${id}`);
-export const updateRSVP = (id, data) => api.post(`/guests/${id}/rsvp`, data);
+export const getGuests = (eventId) => api.get(`/guests?event_id=${eventId}`);
+export const getGuest = (id) => api.get(`/guests?id=${id}`);
+export const createGuest = (data) => api.post('/guests', data);
+export const updateGuest = (id, data) => api.put(`/guests?id=${id}`, data);
+export const deleteGuest = (id) => api.delete(`/guests?id=${id}`);
+export const updateRSVP = (id, data) => api.put(`/guests?id=${id}`, { ...data, rsvp_status: data.status });
 
 // Tables
 export const getTables = (eventId) => api.get(`/tables/event/${eventId}`);

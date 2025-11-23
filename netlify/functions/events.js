@@ -1,10 +1,10 @@
-const { initializeDatabase } = require('./database/db');
+const { SupabaseDatabase } = require('./database/supabase');
 
 // Initialize database on cold start
 let db = null;
-const initDB = async () => {
+const getDB = () => {
   if (!db) {
-    db = await initializeDatabase();
+    db = new SupabaseDatabase();
   }
   return db;
 };
@@ -27,7 +27,7 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const database = await initDB();
+    const database = getDB();
     
     const { httpMethod, body, queryStringParameters } = event;
     const path = event.path || event.rawUrl || '';
@@ -41,12 +41,7 @@ exports.handler = async (event, context) => {
         
         if (!eventId) {
           // Get all events
-          const events = await new Promise((resolve, reject) => {
-            database.all('SELECT * FROM events ORDER BY created_at DESC', (err, rows) => {
-              if (err) reject(err);
-              else resolve(rows);
-            });
-          });
+          const events = await database.getAllEvents();
           
           return {
             statusCode: 200,
@@ -58,12 +53,7 @@ exports.handler = async (event, context) => {
           };
         } else {
           // Get single event
-          const event = await new Promise((resolve, reject) => {
-            database.get('SELECT * FROM events WHERE id = ?', [eventId], (err, row) => {
-              if (err) reject(err);
-              else resolve(row);
-            });
-          });
+          const event = await database.getEvent(eventId);
           
           if (!event) {
             return {
@@ -88,21 +78,7 @@ exports.handler = async (event, context) => {
       
       case 'POST':
         const eventData = JSON.parse(body);
-        const newEvent = await new Promise((resolve, reject) => {
-          database.run(
-            'INSERT INTO events (name, date, location) VALUES (?, ?, ?)',
-            [eventData.name, eventData.date, eventData.location],
-            function(err) {
-              if (err) reject(err);
-              else {
-                database.get('SELECT * FROM events WHERE id = ?', [this.lastID], (err, row) => {
-                  if (err) reject(err);
-                  else resolve(row);
-                });
-              }
-            }
-          );
-        });
+        const newEvent = await database.createEvent(eventData);
         
         return {
           statusCode: 201,
@@ -128,23 +104,18 @@ exports.handler = async (event, context) => {
           };
         }
         
-        await new Promise((resolve, reject) => {
-          database.run(
-            'UPDATE events SET name = ?, date = ?, location = ? WHERE id = ?',
-            [updateData.name, updateData.date, updateData.location, updateId],
-            function(err) {
-              if (err) reject(err);
-              else resolve();
-            }
-          );
-        });
+        const updatedEvent = await database.updateEvent(updateId, updateData);
         
-        const updatedEvent = await new Promise((resolve, reject) => {
-          database.get('SELECT * FROM events WHERE id = ?', [updateId], (err, row) => {
-            if (err) reject(err);
-            else resolve(row);
-          });
-        });
+        if (!updatedEvent) {
+          return {
+            statusCode: 404,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            },
+            body: JSON.stringify({ error: 'Event not found' })
+          };
+        }
         
         return {
           statusCode: 200,
@@ -169,12 +140,18 @@ exports.handler = async (event, context) => {
           };
         }
         
-        await new Promise((resolve, reject) => {
-          database.run('DELETE FROM events WHERE id = ?', [deleteId], function(err) {
-            if (err) reject(err);
-            else resolve();
-          });
-        });
+        const deleted = await database.deleteEvent(deleteId);
+        
+        if (!deleted) {
+          return {
+            statusCode: 404,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            },
+            body: JSON.stringify({ error: 'Event not found' })
+          };
+        }
         
         return {
           statusCode: 200,

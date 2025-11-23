@@ -40,3 +40,13 @@
   to = "/.netlify/functions/events"
   status = 200
 
+[[redirects]]
+  from = "/api/guests"
+  to = "/.netlify/functions/guests"
+  status = 200
+
+[[redirects]]
+  from = "/api/guests/*"
+  to = "/.netlify/functions/guests"
+  status = 200
+
