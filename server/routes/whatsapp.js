@@ -51,7 +51,7 @@ router.post('/send/:eventId/:guestId', async (req, res) => {
     });
 
     // Create message with RSVP link
-    const rsvpLink = `${process.env.BASE_URL || 'http://localhost:3000'}/rsvp/${eventId}/${guestId}`;
+    const rsvpLink = `${process.env.BASE_URL || 'https://hatoname.netlify.app'}/rsvp/${eventId}/${guestId}`;
     let message = `שלום ${guest.name},\n\nאנחנו שמחים להזמין אותך לחתונה שלנו!\n\n`;
     
     if (invitation && invitation.text_overlay) {
@@ -120,7 +120,7 @@ router.post('/send-bulk/:eventId', async (req, res) => {
         continue;
       }
 
-      const rsvpLink = `${process.env.BASE_URL || 'http://localhost:3000'}/rsvp/${eventId}/${guest.id}`;
+      const rsvpLink = `${process.env.BASE_URL || 'https://hatoname.netlify.app'}/rsvp/${eventId}/${guest.id}`;
       let message = `שלום ${guest.name},\n\nאנחנו שמחים להזמין אותך לחתונה שלנו!\n\n`;
       
       if (invitation && invitation.text_overlay) {
