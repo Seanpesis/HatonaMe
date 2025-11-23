@@ -1,0 +1,16 @@
+[build]
+  command = "cd client && npm install && npm run build"
+  publish = "client/.next"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# For Next.js
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
