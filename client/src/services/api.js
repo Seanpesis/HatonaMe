@@ -2,9 +2,14 @@ import axios from 'axios';
 
 // For production, use the API URL from environment, or try to use relative path
 const getApiUrl = () => {
-  // If we have explicit API URL, use it
+  // If we have explicit API URL, use it (for production)
   if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
+    // Make sure it doesn't end with /api (we add it in baseURL)
+    let url = process.env.NEXT_PUBLIC_API_URL;
+    if (url.endsWith('/api')) {
+      url = url.replace(/\/api$/, '');
+    }
+    return url + '/api';
   }
   
   // In browser (client-side), try to use relative path which will be rewritten by Next.js
