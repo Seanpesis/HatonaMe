@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { getGuest, submitRSVP } from '../../../services/api';
+import '../../styles/rsvp.css';
 
 export default function RSVPPage() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function RSVPPage() {
       if (response.data) {
         setGuest(response.data);
         setStatus(response.data.rsvp_status || 'pending');
-        setGuestsCount(response.data.rsvp_guests_count || 1);
+        setGuestsCount((response.data.plus_one || 0) + 1);
       } else {
         console.error('Guest data is null');
       }
@@ -45,7 +46,8 @@ export default function RSVPPage() {
     try {
       await submitRSVP(eventId, guestId, {
         status,
-        guests_count: guestsCount,
+        plus_one: guestsCount - 1, // minus the guest themselves
+        dietary_restrictions: '', // could add this field later
       });
       setSubmitted(true);
     } catch (err) {

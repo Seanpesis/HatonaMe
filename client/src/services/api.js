@@ -3,7 +3,7 @@ import axios from 'axios';
 // For production, use the API URL from environment, or try to use relative path
 const getApiUrl = () => {
   // If we have explicit API URL, use it (for production)
-  if (process.env.NEXT_PUBLIC_API_URL) {
+  if (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.trim() !== '') {
     // Make sure it doesn't end with /api (we add it in baseURL)
     let url = process.env.NEXT_PUBLIC_API_URL;
     if (url.endsWith('/api')) {

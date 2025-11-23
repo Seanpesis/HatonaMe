@@ -2,14 +2,32 @@
   base = "client"
   command = "npm install && npm run build"
   publish = ".next"
+  functions = "../netlify/functions"
 
 [build.environment]
   NODE_VERSION = "18"
+  NEXT_PUBLIC_API_URL = ""
 
 # Next.js plugin (handles routing automatically)
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Note: Make sure to set NEXT_PUBLIC_API_URL in Netlify Environment Variables
-# to point to your Railway/Render backend server
+# Function settings
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Headers for CORS
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+
+# Redirects for API routes to Netlify Functions
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
 

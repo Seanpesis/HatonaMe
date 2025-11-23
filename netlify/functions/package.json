@@ -1,0 +1,13 @@
+{
+  "name": "netlify-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions for wedding planning app",
+  "main": "index.js",
+  "dependencies": {
+    "sqlite3": "^5.1.6",
+    "multer": "^1.4.5-lts.1",
+    "xlsx": "^0.18.5",
+    "emailjs-com": "^3.2.0",
+    "twilio": "^4.19.0"
+  }
+}

@@ -142,9 +142,14 @@ export default function EventDetails() {
         <h1>{event.name}</h1>
         {event.date && <p>תאריך: {new Date(event.date).toLocaleDateString('he-IL')}</p>}
         {event.location && <p>מיקום: {event.location}</p>}
-        <button className="btn btn-secondary" onClick={() => router.push('/')}>
-          חזרה לרשימת אירועים
-        </button>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          <button className="btn btn-secondary" onClick={() => router.push('/')}>
+            חזרה לרשימת אירועים
+          </button>
+          <button className="btn btn-primary" onClick={() => router.push(`/events/${id}/stats`)}>
+            📊 סטטיסטיקות RSVP
+          </button>
+        </div>
       </div>
 
       <div className="card">
