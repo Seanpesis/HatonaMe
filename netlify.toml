@@ -10,3 +10,6 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Note: Make sure to set NEXT_PUBLIC_API_URL in Netlify Environment Variables
+# to point to your Railway/Render backend server
+
