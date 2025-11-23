@@ -1,24 +1,17 @@
 import axios from 'axios';
 
-// For production, use the API URL from environment, or try to use relative path
+// Simple API URL configuration
 const getApiUrl = () => {
-  // If we have explicit API URL, use it (for production)
-  if (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.trim() !== '') {
-    // Make sure it doesn't end with /api (we add it in baseURL)
-    let url = process.env.NEXT_PUBLIC_API_URL;
-    if (url.endsWith('/api')) {
-      url = url.replace(/\/api$/, '');
-    }
-    return url + '/api';
-  }
-  
-  // In browser (client-side), try to use relative path which will be rewritten by Next.js
-  if (typeof window !== 'undefined') {
+  // Production: use Netlify functions via API redirects
+  if (typeof window !== 'undefined' && (
+    window.location.hostname.includes('netlify.app') ||
+    window.location.hostname.includes('hatoname')
+  )) {
     return '/api';
   }
   
-  // Server-side fallback
-  return 'http://localhost:5000/api';
+  // Development: use mock data for now since server has issues
+  return '/api';
 };
 
 const API_URL = getApiUrl();
