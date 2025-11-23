@@ -1,14 +1,24 @@
 // Supabase database client for Netlify Functions
-const { createClient } = require('@supabase/supabase-js');
+let supabase;
 
-const supabaseUrl = 'https://kcqjepszoofkmkozaehc.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtjcWplcHN6b29ma21rb3phZWhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4NjA3MjMsImV4cCI6MjA3OTQzNjcyM30.I25302yKGnDFi2DM75Edfy6rdRCLQZ299kmSAg4oHcg';
+try {
+  const { createClient } = require('@supabase/supabase-js');
+  
+  const supabaseUrl = 'https://kcqjepszoofkmkozaehc.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtjcWplcHN6b29ma21rb3phZWhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4NjA3MjMsImV4cCI6MjA3OTQzNjcyM30.I25302yKGnDFi2DM75Edfy6rdRCLQZ299kmSAg4oHcg';
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+  supabase = createClient(supabaseUrl, supabaseKey);
+} catch (error) {
+  console.error('Failed to initialize Supabase:', error);
+  // Fallback - will handle in class
+}
 
 class SupabaseDatabase {
   constructor() {
     this.client = supabase;
+    if (!this.client) {
+      throw new Error('Supabase client not initialized. Check @supabase/supabase-js installation.');
+    }
   }
 
   // Events operations

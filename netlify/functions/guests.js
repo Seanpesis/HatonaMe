@@ -1,10 +1,11 @@
-const { SupabaseDatabase } = require('./database/supabase');
+// Temporarily use SimpleDatabase until Supabase is fully set up
+const { SimpleDatabase } = require('./database/simple-db');
 
 // Initialize database on cold start
 let db = null;
 const getDB = () => {
   if (!db) {
-    db = new SupabaseDatabase();
+    db = new SimpleDatabase();
   }
   return db;
 };
@@ -41,7 +42,7 @@ exports.handler = async (event, context) => {
         
         if (guestId) {
           // Get single guest
-          const guest = await database.getGuest(guestId);
+          const guest = database.getGuest(guestId);
           
           if (!guest) {
             return {
@@ -64,7 +65,7 @@ exports.handler = async (event, context) => {
           };
         } else if (eventId) {
           // Get guests for specific event
-          const guests = await database.getGuests(eventId);
+          const guests = database.getGuests(eventId);
           
           return {
             statusCode: 200,
@@ -99,7 +100,7 @@ exports.handler = async (event, context) => {
           };
         }
         
-        const newGuest = await database.createGuest(guestData);
+        const newGuest = database.createGuest(guestData);
         
         return {
           statusCode: 201,
@@ -127,7 +128,7 @@ exports.handler = async (event, context) => {
 
         // Check if this is an RSVP update
         if (updateData.rsvp_status) {
-          const updatedGuest = await database.updateGuestRSVP(updateId, updateData);
+          const updatedGuest = database.updateGuestRSVP(updateId, updateData);
           
           if (!updatedGuest) {
             return {
@@ -152,7 +153,7 @@ exports.handler = async (event, context) => {
           };
         } else {
           // Regular guest update
-          const updatedGuest = await database.updateGuest(updateId, updateData);
+          const updatedGuest = database.updateGuest(updateId, updateData);
           
           if (!updatedGuest) {
             return {
@@ -189,7 +190,7 @@ exports.handler = async (event, context) => {
           };
         }
         
-        const deleted = await database.deleteGuest(deleteId);
+        const deleted = database.deleteGuest(deleteId);
         
         if (!deleted) {
           return {

@@ -1,4 +1,3 @@
-// Temporarily use SimpleDatabase until Supabase is fully set up
 const { SimpleDatabase } = require('./database/simple-db');
 
 // Initialize database on cold start
