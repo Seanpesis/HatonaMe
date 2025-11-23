@@ -1,6 +1,22 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// For production, use the API URL from environment, or try to use relative path
+const getApiUrl = () => {
+  // If we have explicit API URL, use it
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // In browser (client-side), try to use relative path which will be rewritten by Next.js
+  if (typeof window !== 'undefined') {
+    return '/api';
+  }
+  
+  // Server-side fallback
+  return 'http://localhost:5000/api';
+};
+
+const API_URL = getApiUrl();
 
 const api = axios.create({
   baseURL: API_URL,
@@ -8,6 +24,21 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Add error interceptor for better debugging
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      message: error.message,
+      baseURL: API_URL,
+    });
+    return Promise.reject(error);
+  }
+);
 
 // Events
 export const getEvents = () => api.get('/events');

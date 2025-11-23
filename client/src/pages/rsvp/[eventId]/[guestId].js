@@ -21,11 +21,18 @@ export default function RSVPPage() {
   const loadGuest = async () => {
     try {
       const response = await getGuest(guestId);
-      setGuest(response.data);
-      setStatus(response.data.rsvp_status || 'pending');
-      setGuestsCount(response.data.rsvp_guests_count || 1);
+      if (response.data) {
+        setGuest(response.data);
+        setStatus(response.data.rsvp_status || 'pending');
+        setGuestsCount(response.data.rsvp_guests_count || 1);
+      } else {
+        console.error('Guest data is null');
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Error loading guest:', err);
+      console.error('API URL:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api');
+      console.error('Guest ID:', guestId);
+      console.error('Event ID:', eventId);
     } finally {
       setLoading(false);
     }
@@ -57,10 +64,27 @@ export default function RSVPPage() {
     );
   }
 
-  if (!guest) {
+  if (!guest && !loading) {
     return (
       <div className="container">
-        <div className="error">מוזמן לא נמצא</div>
+        <div className="header">
+          <h1>אישור הגעה לחתונה</h1>
+        </div>
+        <div className="card">
+          <div className="error">
+            <h2>מוזמן לא נמצא</h2>
+            <p>ייתכן שהקישור לא תקין או שהשרת לא זמין כרגע.</p>
+            <p style={{ fontSize: '14px', marginTop: '10px' }}>
+              אם הבעיה נמשכת, אנא פנה למארגני האירוע.
+            </p>
+            <details style={{ marginTop: '15px', fontSize: '12px' }}>
+              <summary>פרטים טכניים (לפיתוח)</summary>
+              <p>Event ID: {eventId}</p>
+              <p>Guest ID: {guestId}</p>
+              <p>API URL: {process.env.NEXT_PUBLIC_API_URL || 'לא מוגדר (משתמש ב-localhost)'}</p>
+            </details>
+          </div>
+        </div>
       </div>
     );
   }
