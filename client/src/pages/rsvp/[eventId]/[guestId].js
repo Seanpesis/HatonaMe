@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { getGuest, submitRSVP } from '../../../services/api';
-import '../../styles/rsvp.css';
+import '../../../styles/rsvp.css';
 
 export default function RSVPPage() {
   const router = useRouter();
