@@ -14,7 +14,7 @@
 
 # Function settings
 [functions]
-  directory = "netlify/functions"
+  directory = "../netlify/functions"
   node_bundler = "esbuild"
 
 # Headers for CORS
