@@ -1,4 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
+const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 const { Pool } = require('pg');
@@ -46,101 +46,107 @@ function initPostgreSQL() {
 
 function initSQLite() {
   return new Promise((resolve, reject) => {
-    // Ensure directory exists
-    const dbDir = path.dirname(DB_PATH);
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
-    }
-    
-    db = new sqlite3.Database(DB_PATH, (err) => {
-      if (err) {
-        console.error('Error opening database:', err);
-        reject(err);
-        return;
+    try {
+      // Ensure directory exists
+      const dbDir = path.dirname(DB_PATH);
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
       }
+      
+      db = new Database(DB_PATH);
       console.log(`Connected to SQLite database at: ${DB_PATH}`);
+      
       createTablesSQLite().then(resolve).catch(reject);
-    });
+    } catch (err) {
+      console.error('Error opening database:', err);
+      reject(err);
+    }
   });
 }
 
 function createTablesSQLite() {
   return new Promise((resolve, reject) => {
-    const queries = [
-      // Events table
-      `CREATE TABLE IF NOT EXISTS events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        date TEXT,
-        location TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`,
-      
-      // Guests table
-      `CREATE TABLE IF NOT EXISTS guests (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        category TEXT,
-        phone TEXT,
-        table_number INTEGER,
-        rsvp_status TEXT DEFAULT 'pending',
-        rsvp_guests_count INTEGER DEFAULT 1,
-        rsvp_response_date DATETIME,
-        notes TEXT,
-        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
-      )`,
-      
-      // Tables table
-      `CREATE TABLE IF NOT EXISTS tables (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_id INTEGER NOT NULL,
-        table_number INTEGER NOT NULL,
-        capacity INTEGER DEFAULT 10,
-        category TEXT,
-        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-        UNIQUE(event_id, table_number)
-      )`,
-      
-      // Invitations table
-      `CREATE TABLE IF NOT EXISTS invitations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_id INTEGER NOT NULL,
-        image_path TEXT,
-        text_overlay TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
-      )`,
-      
-      // WhatsApp messages table
-      `CREATE TABLE IF NOT EXISTS whatsapp_messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        event_id INTEGER NOT NULL,
-        guest_id INTEGER,
-        phone TEXT NOT NULL,
-        message TEXT,
-        sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        status TEXT DEFAULT 'sent',
-        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-        FOREIGN KEY (guest_id) REFERENCES guests(id) ON DELETE SET NULL
-      )`
-    ];
+    try {
+      const queries = [
+        // Events table
+        `CREATE TABLE IF NOT EXISTS events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          date TEXT,
+          location TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+        
+        // Guests table
+        `CREATE TABLE IF NOT EXISTS guests (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          event_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          category TEXT,
+          phone TEXT,
+          table_id INTEGER,
+          rsvp_status TEXT DEFAULT 'pending',
+          plus_one INTEGER DEFAULT 0,
+          dietary_restrictions TEXT,
+          rsvp_date DATETIME,
+          invitation_sent INTEGER DEFAULT 0,
+          invitation_sent_at DATETIME,
+          notes TEXT,
+          FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+        )`,
+        
+        // Tables table
+        `CREATE TABLE IF NOT EXISTS tables (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          event_id INTEGER NOT NULL,
+          table_number INTEGER NOT NULL,
+          capacity INTEGER DEFAULT 10,
+          table_type TEXT DEFAULT 'round',
+          FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+          UNIQUE(event_id, table_number)
+        )`,
+        
+        // Invitations table
+        `CREATE TABLE IF NOT EXISTS invitations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          event_id INTEGER NOT NULL,
+          image_path TEXT,
+          text_overlay TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+        )`,
+        
+        // WhatsApp messages table
+        `CREATE TABLE IF NOT EXISTS whatsapp_messages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          event_id INTEGER NOT NULL,
+          guest_id INTEGER,
+          phone TEXT NOT NULL,
+          message TEXT,
+          sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          status TEXT DEFAULT 'sent',
+          FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+          FOREIGN KEY (guest_id) REFERENCES guests(id) ON DELETE SET NULL
+        )`
+      ];
 
-    let completed = 0;
-    queries.forEach((query, index) => {
-      db.run(query, (err) => {
-        if (err) {
+      // Execute all queries synchronously with better-sqlite3
+      queries.forEach((query, index) => {
+        try {
+          db.exec(query);
+          console.log(`Created table ${index + 1}/${queries.length}`);
+        } catch (err) {
           console.error(`Error creating table ${index}:`, err);
-          reject(err);
-          return;
-        }
-        completed++;
-        if (completed === queries.length) {
-          resolve();
+          throw err;
         }
       });
-    });
+      
+      console.log('All SQLite tables created successfully');
+      resolve();
+    } catch (error) {
+      reject(error);
+    }
   });
 }
 
@@ -212,10 +218,9 @@ function getDb() {
     if (!pgPool) {
       throw new Error('PostgreSQL database not initialized');
     }
-    // Return PostgreSQL adapter that mimics SQLite API
+    // Return PostgreSQL adapter that mimics better-sqlite3 API
     return {
       all: (query, params, callback) => {
-        // Convert ? placeholders to $1, $2, etc for PostgreSQL
         const pgQuery = convertQuery(query);
         pgPool.query(pgQuery, params || [])
           .then(result => callback(null, result.rows))
@@ -228,7 +233,6 @@ function getDb() {
           .catch(err => callback(err, null));
       },
       run: (query, params, callback) => {
-        // For INSERT queries, add RETURNING id if not present
         let pgQuery = convertQuery(query);
         const isInsert = query.trim().toUpperCase().startsWith('INSERT');
         if (isInsert && !pgQuery.toUpperCase().includes('RETURNING')) {
@@ -248,42 +252,50 @@ function getDb() {
           .catch(err => {
             if (callback) callback(err);
           });
-      },
-      prepare: (query) => {
-        let pgQuery = convertQuery(query);
-        // For INSERT queries, add RETURNING id if not present
-        const isInsert = query.trim().toUpperCase().startsWith('INSERT');
-        if (isInsert && !pgQuery.toUpperCase().includes('RETURNING')) {
-          pgQuery = pgQuery + ' RETURNING id';
-        }
-        
-        return {
-          run: (params, callback) => {
-            pgPool.query(pgQuery, params || [])
-              .then(result => {
-                if (callback) {
-                  const context = {
-                    lastID: result.rows[0]?.id || null,
-                    changes: result.rowCount || 0
-                  };
-                  callback.call(context, null);
-                }
-              })
-              .catch(err => {
-                if (callback) callback(err);
-              });
-          },
-          finalize: (callback) => {
-            if (callback) callback(null);
-          }
-        };
       }
     };
   } else {
     if (!db) {
       throw new Error('SQLite database not initialized');
     }
-    return db;
+    
+    // Return adapter that converts better-sqlite3 to callback-style API
+    return {
+      all: (query, params, callback) => {
+        try {
+          const stmt = db.prepare(query);
+          const rows = stmt.all(params || []);
+          callback(null, rows);
+        } catch (err) {
+          callback(err, null);
+        }
+      },
+      get: (query, params, callback) => {
+        try {
+          const stmt = db.prepare(query);
+          const row = stmt.get(params || []);
+          callback(null, row || null);
+        } catch (err) {
+          callback(err, null);
+        }
+      },
+      run: (query, params, callback) => {
+        try {
+          const stmt = db.prepare(query);
+          const result = stmt.run(params || []);
+          
+          if (callback) {
+            const context = {
+              lastID: result.lastInsertRowid || null,
+              changes: result.changes || 0
+            };
+            callback.call(context, null);
+          }
+        } catch (err) {
+          if (callback) callback(err);
+        }
+      }
+    };
   }
 }
 
@@ -305,16 +317,13 @@ function close() {
       console.log('PostgreSQL connection closed');
     });
   } else if (db) {
-    return new Promise((resolve, reject) => {
-      db.close((err) => {
-        if (err) {
-          reject(err);
-        } else {
-          console.log('SQLite connection closed');
-          resolve();
-        }
-      });
-    });
+    try {
+      db.close();
+      console.log('SQLite connection closed');
+      return Promise.resolve();
+    } catch (err) {
+      return Promise.reject(err);
+    }
   }
   return Promise.resolve();
 }

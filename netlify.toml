@@ -12,6 +12,10 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Plugin to install function dependencies
+[[plugins]]
+  package = "@netlify/plugin-functions-install-core"
+
 # Function settings
 [functions]
   directory = "../netlify/functions"
